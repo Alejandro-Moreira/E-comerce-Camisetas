@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Gradiente moderno para el Sidebar como se solicitó */
+  .bg-gradient-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+  }
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}

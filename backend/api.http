@@ -1,0 +1,72 @@
+### APUNTES PARA PRUEBAS RÁPIDAS (Postman / REST Client) ###
+
+### =====================
+### 1. AUTENTICACIÓN
+### =====================
+
+### Registrarse
+POST http://localhost:3002/api/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Nuevo Cliente",
+  "email": "cliente@test.com",
+  "password": "password123"
+}
+
+###
+
+### Iniciar Sesión (Copia el token "Bearer" de la respuesta)
+POST http://localhost:3002/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "cliente@test.com",
+  "password": "password123"
+}
+
+### =====================
+### 2. PRODUCTOS
+### =====================
+
+### Obtener el catálogo (Público)
+GET http://localhost:3002/api/productos
+
+###
+
+### Crear un Producto (Sólo ADMIN -> Pega tu token debajo)
+POST http://localhost:3002/api/productos
+Authorization: Bearer PON_TU_TOKEN_AQUI
+Content-Type: application/json
+
+{
+  "nombre": "Camiseta Backend Master",
+  "descripcion": "Muestra tus habilidades",
+  "precio": 35.50,
+  "stock": 100,
+  "imagen": "https://placehold.co/400x400",
+  "talla": "L",
+  "color": "Negro Oscuro"
+}
+
+### =====================
+### 3. PEDIDOS
+### =====================
+
+### Crear Pedido (Checkout - Requiere token de un usuario logueado)
+POST http://localhost:3002/api/pedidos/create
+Authorization: Bearer PON_TU_TOKEN_AQUI
+Content-Type: application/json
+
+{
+  "items": [
+     {"id": 1, "cantidad": 1, "precio": 35.50}
+  ],
+  "total": 35.50
+}
+
+###
+
+### Ver Stats del Dashboard (Sólo ADMIN)
+GET http://localhost:5000/api/dashboard/stats
+Authorization: Bearer PON_TU_TOKEN_AQUI

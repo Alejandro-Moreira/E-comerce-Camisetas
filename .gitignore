@@ -1,0 +1,34 @@
+# Dependencias de Node
+node_modules/
+package-lock.json
+
+# Entorno y Secretos (PROHIBIDO SUBIR)
+.env
+.env.local
+.env.development
+.env.production
+.env.*
+
+# Logs de error
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compilados y Builds
+dist/
+build/
+.next/
+out/
+.vite/
+
+# Archivos estáticos subidos localmente
+backend/uploads/
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Bases de Datos integradas (SQLite, etc si aplicara)
+*.sqlite
+*.sqlite3
