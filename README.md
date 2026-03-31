@@ -1,4 +1,4 @@
-# Plataforma E-Commerce
+# Plataforma E-Commerce Camisetas
 
 ![App Overview](https://img.shields.io/badge/Stack-MERN_Variante-purple?style=for-the-badge) ![React](https://img.shields.io/badge/React_Vite-141516?style=for-the-badge&logo=react&logoColor=61DAFB) ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
@@ -68,4 +68,3 @@ npm run dev
 ---
 Diseñado y orquestado por **[Alejandro Moreira](https://github.com/Alejandro-Moreira)**.  
 *© Todos los derechos reservados.*
-# E-comerce-Camisetas
