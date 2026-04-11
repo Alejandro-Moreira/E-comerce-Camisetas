@@ -1,4 +1,4 @@
-# Plataforma E-Commerce Camisetas
+# Plataforma E-Commerce
 
 ![App Overview](https://img.shields.io/badge/Stack-MERN_Variante-purple?style=for-the-badge) ![React](https://img.shields.io/badge/React_Vite-141516?style=for-the-badge&logo=react&logoColor=61DAFB) ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
@@ -27,44 +27,53 @@ Un sistema de comercio electrónico fluido y extremadamente visual construido pe
 ## Despliegue Local Rápido
 
 ### Prerrequisitos
-Asegúrate de contar con Node.js y un gestor activo como XAMPP (Apache + MySQL) inicializado.
+- Node.js (v20 o superior).
+- Servidor MySQL.
+- Servidor Redis (o Docker Desktop activo en Windows/Mac para levantarlo).
 
-### 1. Clona e instala
-```bash
-git clone https://github.com/Alejandro-Moreira/TuRepoAca.git
-cd E-commerce
-```
+### Paso 1: Configurar Dependencias del Proyecto
+Abre tu consola de comandos en la ruta principal. Debes instalar los paquetes de los dos motores individualmente:
 
-### 2. Levanta el Cerebro (Back-end)
-Abre tu consola:
 ```bash
+# Instalamos la lógica de la API
 cd backend
 npm install
-```
-Renombra el `.env.example` (o crea un `.env`) ajustándolo a tu entorno:
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_DATABASE=ecommerce_camisetas
 
-PORT=3002
-STRIPE_SECRET_KEY=sk_test_...
-SESSION_SECRET=string_largo_secreto
-```
-Y arráncalo:
-```bash
-npm start
-```
-
-### 3. Levanta la Piel (Front-end)
-En otra terminal nueva dedicada:
-```bash
-cd frontend
+# Instalamos la capa Visual
+cd ../frontend
 npm install
+```
+
+### Paso 2: Infraestructura Local (Docker)
+Si corres un entorno de desarrollo usando la plantilla provista, levanta los contenedores de motor base posicionándote en la raíz del proyecto:
+```bash
+docker-compose up -d redis mysql
+```
+*(Nota: Si usas MySQL de XAMPP / Local en el puerto 3306, solo enciende redis: `docker-compose up -d redis`)*.
+
+### Paso 3: Inicializar la Base de Datos
+El proyecto cuenta con comandos constructores de esquemas propios. Posiciónate en `backend/` y dispara el script constructor que forjará tablas relacionales, FKs e Índices.
+```bash
+cd backend
+node migrador.js
+```
+
+### Paso 4: Levantar los Servidores
+
+**Para el Servidor API (Backend)** *(escuchando en `http://localhost:3002`)*:
+```bash
+cd backend
+npm start
+``` 
+
+**Para la Aplicación Web (Frontend)** *(escuchando en Vite Proxy `http://localhost:5173`)*:
+```bash
+# En otra ventana de terminal paralela
+cd frontend
 npm run dev
 ```
 
 ---
 Diseñado y orquestado por **[Alejandro Moreira](https://github.com/Alejandro-Moreira)**.  
 *© Todos los derechos reservados.*
+# E-comerce-Camisetas

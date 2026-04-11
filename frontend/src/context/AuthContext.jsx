@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -7,17 +7,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // URL Base del Backend
-  const API_URL = 'http://localhost:3002/api';
-
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const res = await axios.get(`${API_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await api.get('/auth/me');
           setUser(res.data.user);
         } catch (err) {
           console.error("Sesión caducada");
@@ -30,15 +25,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    const res = await api.post('/auth/login', { email, password });
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
-    return res.data;
+    return res;
   };
 
   const register = async (nombre, email, password) => {
-    const res = await axios.post(`${API_URL}/auth/register`, { nombre, email, password });
-    return res.data;
+    const res = await api.post('/auth/register', { nombre, email, password });
+    return res;
   };
 
   const logout = () => {
@@ -47,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, API_URL }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

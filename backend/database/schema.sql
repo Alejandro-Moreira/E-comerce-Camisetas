@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS detalle_pedido (
   producto_id INT NOT NULL, 
   cantidad INT NOT NULL,
   precio DECIMAL(10,2) NOT NULL,
+  talla VARCHAR(10) DEFAULT 'N/A',
 
   FOREIGN KEY (pedido_id) 
     REFERENCES pedidos(id) 
@@ -65,6 +66,9 @@ CREATE TABLE IF NOT EXISTS detalle_pedido (
     REFERENCES productos(id) 
     ON DELETE CASCADE
 );
+
+-- Si la tabla ya existía sin la columna talla
+ALTER TABLE detalle_pedido ADD COLUMN IF NOT EXISTS talla VARCHAR(10) DEFAULT 'N/A';
 
 -- ÍNDICES (RENDIMIENTO)
 CREATE INDEX idx_usuario_email ON usuarios(email);
@@ -98,3 +102,39 @@ VALUES (1, 50.00, 'pendiente', 'Av. Siempre Viva 123', 'Quito', 'Ecuador');
 -- Detalle del pedido de prueba (2 unidades de la Camiseta ID 1)
 INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio)
 VALUES (1, 1, 2, 25.00);
+
+-- ==========================================
+-- ESTRUCTURAS AVANZADAS (AUTH & SYS LOGS)
+-- ==========================================
+
+-- Añadir estado de validación al usuario si no existiera
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS verificado TINYINT(1) DEFAULT 0;
+
+-- TABLA: VERIFICACIÓN DE CORREOS
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- TABLA: RECUPERACIÓN CONTRASEÑA
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL,
+  expiracion DATETIME NOT NULL,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- TABLA: HEATMAP CLICKS (Tolerancia Alta)
+CREATE TABLE IF NOT EXISTS user_clicks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id VARCHAR(50) DEFAULT 'Anonimo',
+  page VARCHAR(255),
+  x INT,
+  y INT,
+  timestamp DATETIME,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

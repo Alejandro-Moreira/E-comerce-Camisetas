@@ -1,34 +1,53 @@
-# Dependencias de Node
+# Dependencias
 node_modules/
-package-lock.json
 
-# Entorno y Secretos (PROHIBIDO SUBIR)
+# Entornos y Secretos
 .env
 .env.local
 .env.development
+.env.test
 .env.production
-.env.*
+*.pem
 
-# Logs de error
+# Archivos de Build y Compilación
+dist/
+build/
+/frontend/dist/
+.next/
+out/
+
+# Logs e Invariantes
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logs/
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+crashes/
 
-# Compilados y Builds
-dist/
-build/
-.next/
-out/
-.vite/
+# Assets de Usuarios
+/backend/uploads/*
+!/backend/uploads/.gitkeep
 
-# Archivos estáticos subidos localmente
-backend/uploads/
-
-# Archivos del Sistema Operativo
+# Archivos de Sistema Operativo y Editores
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-desktop.ini
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Bases de Datos integradas (SQLite, etc si aplicara)
-*.sqlite
-*.sqlite3
+# Archivos temporales de Test
+coverage/
+.nyc_output/

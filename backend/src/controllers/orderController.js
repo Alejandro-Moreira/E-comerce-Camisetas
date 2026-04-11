@@ -1,102 +1,91 @@
-const pool = require('../config/db');
-// Configuramos stripe una vez cargadas las variables en server/app.js o localmente si ya están:
-let stripe;
-if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') && !process.env.STRIPE_SECRET_KEY.includes('reemplazar')) {
-  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-}
+const orderService = require('../services/orderService');
+const { successResponse, errorResponse } = require('../utils/responseHandler');
+const AppError = require('../utils/AppError');
+const redisClient = require('../config/redis');
+const logger = require('../utils/logger');
 
-// Crear un pedido y un Payment Intent para Stripe
+const CacheService = require('../services/cacheService');
+
+// Función interna para barrer namespaces de pedidos y stats
+const invalidateOrdersCache = async () => {
+  await CacheService.invalidatePattern('cache:orders:*');
+  await CacheService.invalidatePattern('cache:dashboard:*');
+};
+
 exports.createOrder = async (req, res) => {
   try {
     const { items, total, direccion, ciudad, pais } = req.body;
-    const usuario_id = req.user.id;
-
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: 'El carrito está vacío' });
-    }
-
-    // Insertar pedido pendiente con Detalles de Envío
-    const [result] = await pool.query(
-      'INSERT INTO pedidos (usuario_id, total, estado, direccion, ciudad, pais) VALUES (?, ?, ?, ?, ?, ?)',
-      [usuario_id, total, 'pendiente', direccion, ciudad, pais || 'Ecuador']
-    );
-    const pedido_id = result.insertId;
-
-    // Insertar detalle iterando incluyendo Talla Seleccionada
-    const values = items.map(item => [pedido_id, item.id, item.cantidad, item.precio, item.talla || 'N/A']);
-    await pool.query(
-      'INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio, talla) VALUES ?',
-      [values]
-    );
-
-    // Integración Stripe
-    if (stripe) {
-      const amountInCents = Math.round(Number(total) * 100);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountInCents,
-        currency: 'usd',
-        metadata: { pedido_id: pedido_id.toString(), usuario_id: usuario_id.toString() }
-      });
-
-      return res.json({
-        clientSecret: paymentIntent.client_secret,
-        pedido_id
+    const result = await orderService.processOrder(req.user.id, items, total, direccion, ciudad, pais);
+    await invalidateOrdersCache();
+    
+    // Notificación en Tiempo Real vía Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admins').emit('NEW_ORDER', {
+        id: result.pedido_id || 'N/A',
+        total: total,
+        estado: 'pendiente'
       });
     }
 
-    res.status(201).json({ message: 'Pedido creado logísticamente', pedido_id });
-
+    successResponse(res, result, 'Pedido inicializado', 201);
   } catch (err) {
-    console.error('Error al crear orden:', err);
-    res.status(500).json({ error: 'Fallo al asentar la logística' });
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Fallo al asentar la logística');
   }
 };
 
-// Confirmar pago (Llamado tras éxito de Stripe)
 exports.confirmOrderPayment = async (req, res) => {
   try {
-    const { id } = req.params;
-    await pool.query("UPDATE pedidos SET estado = 'pagado' WHERE id = ?", [id]);
-    res.json({ message: 'Pago confirmado y pedido actualizado' });
+    await orderService.confirmPayment(req.params.id);
+    await invalidateOrdersCache();
+    successResponse(res, null, 'Pago confirmado y pedido actualizado');
   } catch (err) {
-    res.status(500).json({ error: 'Error confirmando pedido' });
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Error confirmando pedido');
   }
 };
 
-// Obtener pedidos del cliente para su "Historial"
 exports.getMyOrders = async (req, res) => {
   try {
-    const usuario_id = req.user.id;
-    const [rows] = await pool.query('SELECT * FROM pedidos WHERE usuario_id = ? ORDER BY fecha DESC', [usuario_id]);
-    res.json(rows);
+    const orders = await orderService.getUserOrders(req.user.id);
+    successResponse(res, orders, 'Historial obtenido');
   } catch (err) {
-    res.status(500).json({ error: 'Error obteniendo historial' });
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Error obteniendo historial');
   }
 };
 
-// Obtener TODOS los pedidos (Dashboard Administrador)
 exports.getAllOrders = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT p.*, u.nombre as cliente_nombre, u.email as cliente_email
-      FROM pedidos p 
-      JOIN usuarios u ON p.usuario_id = u.id 
-      ORDER BY p.fecha DESC
-    `);
-    res.json(rows);
+    const orders = await orderService.getAllOrders();
+    successResponse(res, orders, 'Pedidos globales obtenidos');
   } catch (err) {
-    res.status(500).json({ error: 'Error obteniendo pedidos' });
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Error obteniendo pedidos');
   }
 };
 
-// Cambiar estado del pedido a 'enviado' o 'entregado' (ADMIN)
 exports.updateOrderStatus = async (req, res) => {
   try {
-    const { id } = req.params;
     const { estado } = req.body;
-    await pool.query('UPDATE pedidos SET estado = ? WHERE id = ?', [estado, id]);
-    res.json({ message: 'Estado del pedido actualizado exitosamente' });
+    await orderService.updateStatus(req.params.id, estado);
+    await invalidateOrdersCache();
+    
+    // Trace action securely in Audit framework
+    const { logAudit } = require('../utils/auditLogger');
+    await logAudit({
+      userId: req.user.id,
+      action: 'UPDATE_ORDER_STATUS',
+      entity: 'ORDER',
+      entityId: req.params.id,
+      metadata: { new_status: estado },
+      ip: req.ip
+    });
+
+    successResponse(res, null, 'Estado actualizado exitosamente');
   } catch (err) {
-    res.status(500).json({ error: 'Error actualizando estado' });
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Error actualizando estado');
   }
 };

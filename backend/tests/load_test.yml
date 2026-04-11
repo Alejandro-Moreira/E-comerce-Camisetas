@@ -1,0 +1,30 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 50
+      name: "Warm up API"
+    - duration: 60
+      arrivalRate: 50
+      name: "Sustained peak load"
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "Recorrido Comprador Crítico"
+    flow:
+      # Pega contra la home de productos (Que no están oxidados sino vivos)
+      - get:
+          url: "/api/productos"
+          expect:
+            - statusCode: 200
+      # Verifica telemetría (Health) 
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+      # Intentar ruta que no existe para forzar errorHandler (404)
+      - get:
+          url: "/api/non-existent-route-404"
+          expect:
+            - statusCode: 404

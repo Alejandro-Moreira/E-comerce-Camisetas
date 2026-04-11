@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { Plus, Edit2, Trash2, Search, ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast'; 
@@ -13,12 +13,12 @@ export default function ProductsMgmt() {
     nombre: '', descripcion: '', precio: 0, stock: 0, imagen: '', talla: '', color: '', archivo: null 
   });
   
-  const { API_URL } = useContext(AuthContext);
+
   const token = localStorage.getItem('token');
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/productos`);
+      const res = await api.get('/productos');
       setProducts(res.data);
     } catch(e) { toast.error("Imposible cargar el inventario"); }
   };
@@ -48,27 +48,27 @@ export default function ProductsMgmt() {
       }
 
       if (currentProduct.id) {
-        await axios.put(`${API_URL}/productos/${currentProduct.id}`, formData, { 
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data'} 
+        await api.put(`/productos/${currentProduct.id}`, formData, { 
+          headers: { 'Content-Type': 'multipart/form-data'} 
         });
         toast.success("Camiseta Actualizada!");
       } else {
-        await axios.post(`${API_URL}/productos`, formData, { 
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data'} 
+        await api.post('/productos', formData, { 
+          headers: { 'Content-Type': 'multipart/form-data'} 
         });
         toast.success("Prenda Agregada Exitosamente!");
       }
       setShowModal(false);
       fetchProducts();
     } catch (err) {
-      toast.error(err.response?.data?.error || "Error guardando formulario. Tamaño máximo foto: 5MB");
+      toast.error(err.message || "Error guardando formulario. Tamaño máximo foto: 5MB");
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Confirmas que deseas eliminar permanentemente esta prenda?')) {
       try {
-        await axios.delete(`${API_URL}/productos/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await api.delete(`/productos/${id}`);
         toast.success("Producto purgado", { icon: '🗑️' });
         fetchProducts();
       } catch (err) { toast.error("Error al borrar del sistema"); }

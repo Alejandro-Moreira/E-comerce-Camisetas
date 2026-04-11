@@ -1,40 +1,78 @@
-const pool = require('../config/db');
+const dashboardService = require('../services/dashboardService');
+const { successResponse, errorResponse } = require('../utils/responseHandler');
+const AppError = require('../utils/AppError');
 
 exports.getStats = async (req, res) => {
   try {
-    // Total de ingresos (solo pedidos que han sido pagados, enviados o entregados)
-    const [ventasRow] = await pool.query('SELECT SUM(total) as total_ventas FROM pedidos WHERE estado IN ("pagado", "enviado", "entregado")');
-    const totalVentas = parseFloat(ventasRow[0].total_ventas) || 0;
-
-    // Métricas totales
-    const [pedidosRow] = await pool.query('SELECT COUNT(*) as total_pedidos FROM pedidos');
-    const totalPedidos = pedidosRow[0].total_pedidos;
-
-    const [clientesRow] = await pool.query('SELECT COUNT(*) as total_clientes FROM usuarios WHERE rol = "cliente"');
-    const totalClientes = clientesRow[0].total_clientes;
-
-    const [productosRow] = await pool.query('SELECT COUNT(*) as total_productos FROM productos');
-    const totalProductos = productosRow[0].total_productos;
-
-    // Resumen simplificado de últimas 5 ventas para gráfico simple en dashboard
-    const [ventasRecientesRow] = await pool.query(`
-      SELECT DATE(fecha) as fecha_corta, SUM(total) as diario 
-      FROM pedidos 
-      WHERE estado IN ("pagado", "enviado", "entregado")
-      GROUP BY DATE(fecha) 
-      ORDER BY DATE(fecha) DESC 
-      LIMIT 7
-    `);
-
-    res.json({
-      totalVentas,
-      totalPedidos,
-      totalClientes,
-      totalProductos,
-      ventasRecientes: ventasRecientesRow.reverse() // Para el Chart.js del Dashboard
-    });
+    const stats = await dashboardService.getDashboardStats();
+    successResponse(res, stats, 'Estadísticas obtenidas correctamente', 200);
   } catch (err) {
-    console.error('Error calculando stats dashboard:', err);
-    res.status(500).json({ error: 'Error obteniendo estadísticas' });
+    console.error('[DASHBOARD ERROR]:', err.message);
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'STATS_FETCH_ERROR', 'Error al obtener estadísticas del dashboard', 500);
+  }
+};
+
+exports.getPaginatedOrders = async (req, res, next) => {
+  try {
+    const pool = require('../config/db'); // Require direct to pool if not in service
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+    const offset = (page - 1) * limit;
+    
+    // Filtros dinámicos
+    const estadoStr = req.query.estado || '';
+    const searchStr = req.query.search || '';
+
+    let whereClause = 'WHERE 1=1';
+    let queryParamsCount = [];
+    let queryParamsData = [];
+
+    if (estadoStr) {
+      whereClause += ' AND p.estado = ?';
+      queryParamsCount.push(estadoStr);
+      queryParamsData.push(estadoStr);
+    }
+    if (searchStr) {
+      whereClause += ' AND u.email LIKE ?';
+      const likeStr = `%${searchStr}%`;
+      queryParamsCount.push(likeStr);
+      queryParamsData.push(likeStr);
+    }
+
+    // Obtener total filtrado
+    const countQuery = `
+      SELECT COUNT(p.id) as total 
+      FROM pedidos p 
+      LEFT JOIN usuarios u ON p.usuario_id = u.id 
+      ${whereClause}
+    `;
+    const [countRows] = await pool.query(countQuery, queryParamsCount);
+    const total = countRows[0].total;
+
+    // Obtener paginados usando JOINs para traer el email del usuario
+    const dataQuery = `
+      SELECT p.id, p.fecha, p.total, p.estado, u.email as cliente 
+      FROM pedidos p
+      LEFT JOIN usuarios u ON p.usuario_id = u.id
+      ${whereClause}
+      ORDER BY p.fecha DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    queryParamsData.push(limit, offset);
+    const [orders] = await pool.query(dataQuery, queryParamsData);
+
+    return successResponse(res, {
+      orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    }, 'Pedidos recuperados exitosamente');
+  } catch (error) {
+    next(error);
   }
 };

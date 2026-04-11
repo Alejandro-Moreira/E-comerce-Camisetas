@@ -1,22 +1,21 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { DollarSign, PackageCheck, Send, Archive } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function OrdersMgmt() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { API_URL } = useContext(AuthContext);
+
   const token = localStorage.getItem('token');
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get(`${API_URL}/pedidos`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/pedidos');
       setOrders(res.data);
     } catch (err) {
-      console.error(err);
+      toast.error(err.message || "Error al cargar pedios");
     } finally {
       setLoading(false);
     }
@@ -26,12 +25,11 @@ export default function OrdersMgmt() {
 
   const updateStatus = async (id, estado) => {
     try {
-      await axios.put(`${API_URL}/pedidos/${id}/status`, { estado }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put(`/pedidos/${id}/status`, { estado });
+      toast.success(`Estado actualizado a: ${estado}`);
       fetchOrders();
     } catch (err) {
-      alert("Error actualizando estado de la logística");
+      toast.error(err.message || "Error actualizando estado de la logística");
     }
   };
 

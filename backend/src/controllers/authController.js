@@ -1,85 +1,93 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+const authService = require('../services/authService');
+const { successResponse, errorResponse } = require('../utils/responseHandler');
+const AppError = require('../utils/AppError');
 
-// Registro de usuario
 exports.register = async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
-
     if (!nombre || !email || !password) {
-      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+      throw new AppError('MISSING_FIELDS', 'Campos requeridos', 400);
     }
-
-    // Verificar si el usuario ya existe
-    const [existingUser] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (existingUser.length > 0) {
-      return res.status(400).json({ error: 'El email ya está registrado' });
-    }
-
-    // Encriptar contraseña
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Si es el primer usuario, lo haremos admin (opcional, o crear admin desde endpoint especial)
-    // Para simplificar, la base de datos pondrá 'cliente' por defecto a todos. 
-    // Luego se puede modificar directo en BD para el dueño.
-    const [result] = await pool.query(
-      'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
-      [nombre, email, hashedPassword, 'cliente']
-    );
-
-    res.status(201).json({ message: 'Usuario registrado exitosamente', userId: result.insertId });
-
+    const userId = await authService.registerUser(nombre, email, password);
+    successResponse(res, { userId }, 'Usuario registrado. Revisa tu correo.', 201);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Error interno del servidor');
   }
 };
 
-// Login de usuario
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña requeridos' });
+      throw new AppError('MISSING_FIELDS', 'Email y contraseña requeridos', 400);
     }
-
-    // Buscar usuario
-    const [users] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
-    if (users.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    const user = users[0];
-
-    // Comparar contraseñas
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    // Crear token con datos del usuario
-    const token = jwt.sign(
-      { id: user.id, rol: user.rol, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
-
-    res.json({
-      message: 'Login exitoso',
-      token,
-      user: {
-        id: user.id,
-        nombre: user.nombre,
-        email: user.email,
-        rol: user.rol
-      }
-    });
-
+    const loginData = await authService.loginUser(email, password);
+    successResponse(res, loginData, 'Login exitoso');
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Error interno del servidor');
+  }
+};
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new AppError('MISSING_FIELDS', 'Refresh token requerido', 400);
+    }
+    const tokenData = await authService.refreshAccessToken(refreshToken);
+    successResponse(res, tokenData, 'Token refrescado exitosamente');
+  } catch (err) {
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Error verificando tu sesión');
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) throw new AppError('MISSING_TOKEN', 'Token requerido', 400);
+    await authService.verifyEmailToken(token);
+    successResponse(res, null, 'Cuenta verificada exitosamente.');
+  } catch (err) {
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Fallo al verificar correo.');
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) throw new AppError('MISSING_FIELDS', 'Email requerido', 400);
+    await authService.requestPasswordReset(email);
+    successResponse(res, null, 'Instrucciones enviadas.');
+  } catch (err) {
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Fallo al solicitar reseteo.');
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) throw new AppError('MISSING_FIELDS', 'Parámetros incompletos', 400);
+    await authService.resetUserPassword(token, newPassword);
+    successResponse(res, null, 'Contraseña actualizada');
+  } catch(err) {
+    if (err instanceof AppError) {
+      return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    }
+    errorResponse(res, 'SERVER_ERROR', 'Fallo reseteando contraseña.');
   }
 };

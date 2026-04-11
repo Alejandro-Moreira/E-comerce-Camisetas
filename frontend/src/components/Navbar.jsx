@@ -108,9 +108,9 @@ export default function Navbar() {
       {/* Cinta Dinámica Inteligente (SPA) */}
       <div className="bg-gray-50 border-b border-gray-200 text-gray-600 flex justify-center sm:justify-start items-center px-4 py-2 gap-2 sm:gap-6 text-xs sm:text-sm font-bold overflow-x-auto scrollbar-hide shadow-inner">
         <Link to="/" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"> Todo el Catálogo</Link>
-        <Link to="/?tab=categorias" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0">Categorías Visuales</Link>
-        <Link to="/?tab=ofertas" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 flex items-center gap-1 text-purple-700 bg-purple-50/50"> Ofertas Exclusivas</Link>
-        <Link to="/?tab=favoritos" className="hover:text-pink-600 hover:bg-pink-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 text-pink-600"> Mis Favoritos</Link>
+        <Link to="/?tab=categorias" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0">Categorías</Link>
+        <Link to="/?tab=ofertas" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 flex items-center gap-1 text-purple-700 bg-purple-50/50">Ofertas</Link>
+        <Link to="/?tab=favoritos" className="hover:text-pink-600 hover:bg-pink-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 text-pink-600">Favoritos</Link>
         <Link to="/?tab=servicio" className="hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors shrink-0">Servicio al Cliente</Link>
       </div>
     </header>
