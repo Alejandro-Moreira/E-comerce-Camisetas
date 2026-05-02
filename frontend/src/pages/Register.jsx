@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +16,8 @@ export default function Register() {
 
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,12 +28,18 @@ export default function Register() {
       return;
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$#%&*!]).{10,}$/;
+    if (!passwordRegex.test(password)) {
+      setErrorMsg('La contraseña debe tener al menos 10 caracteres, incluir mayúsculas, minúsculas, números y al menos un símbolo ($, #, %, &, *, !).');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await register(nombre, email, password);
-      toast.success('Cuenta Creada. Revisa tu correo para verificarla.');
-      navigate('/login');
+      const res = await register(nombre, email, password);
+      toast.success(res?.message || 'Cuenta Creada. Revisa tu correo para verificarla.');
+      navigate(redirect ? `/login?redirect=${redirect}` : '/login');
     } catch (err) {
       toast.error(err.message || 'Datos no válidos para registro');
     } finally {

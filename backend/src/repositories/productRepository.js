@@ -41,9 +41,24 @@ exports.getUserPurchaseHistoryPrefixes = async (userId) => {
   return compras;
 };
 
-exports.findSimilarProductsByNames = async (namePatterns) => {
-  const queries = namePatterns.map(p => `nombre LIKE '%${p}%'`).join(' OR ');
-  const [similares] = await pool.query(`SELECT * FROM productos WHERE ${queries} LIMIT 4`);
+exports.findSimilarProductsByNames = async (namePatterns, excludeUserId) => {
+  const queries = namePatterns.map(p => `p.nombre LIKE '%${p}%'`).join(' OR ');
+  
+  let query = `SELECT p.* FROM productos p WHERE (${queries})`;
+  const params = [];
+  
+  if (excludeUserId) {
+    query += ` AND p.id NOT IN (
+      SELECT dp.producto_id 
+      FROM detalle_pedido dp 
+      JOIN pedidos ord ON dp.pedido_id = ord.id 
+      WHERE ord.usuario_id = ?
+    )`;
+    params.push(excludeUserId);
+  }
+  
+  query += ` LIMIT 4`;
+  const [similares] = await pool.query(query, params);
   return similares;
 };
 

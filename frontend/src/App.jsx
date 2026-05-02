@@ -46,7 +46,34 @@ function App() {
         <CartProvider>
           <BrowserRouter>
           {/* Componente flotante para notificaciones Globales */}
-          <Toaster position="top-center" reverseOrder={false} />
+          <Toaster 
+            position="top-center" 
+            reverseOrder={false} 
+            toastOptions={{
+              success: {
+                style: {
+                  background: '#10B981',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: '#10B981',
+                },
+              },
+              error: {
+                style: {
+                  background: '#EF4444',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: '#EF4444',
+                },
+              },
+            }}
+          />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/producto/:id" element={<ProductDetail />} />

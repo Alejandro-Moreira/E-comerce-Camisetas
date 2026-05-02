@@ -138,3 +138,29 @@ CREATE TABLE IF NOT EXISTS user_clicks (
   timestamp DATETIME,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- TABLA: FAVORITOS
+CREATE TABLE IF NOT EXISTS favoritos (
+  usuario_id INT NOT NULL,
+  producto_id INT NOT NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (usuario_id, producto_id),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+  FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+  INDEX idx_favoritos_usuario (usuario_id)
+);
+
+-- TABLA: CARRITO
+CREATE TABLE IF NOT EXISTS carrito (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  producto_id INT NOT NULL,
+  cantidad INT NOT NULL DEFAULT 1,
+  talla VARCHAR(10) NOT NULL DEFAULT 'Única',
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_user_product_talla (usuario_id, producto_id, talla),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+  FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+  INDEX idx_carrito_usuario (usuario_id)
+);

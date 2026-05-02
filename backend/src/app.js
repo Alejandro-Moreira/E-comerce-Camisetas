@@ -110,6 +110,8 @@ app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/usuarios', require('./routes/userRoutes'));
 app.use('/api/system', require('./routes/monitoringRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/favoritos', require('./routes/favoritesRoutes'));
+app.use('/api/carrito', require('./routes/cartRoutes'));
 
 // Manejo de rutas que no existen
 app.use((req, res) => {

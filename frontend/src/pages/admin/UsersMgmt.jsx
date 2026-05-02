@@ -34,8 +34,8 @@ export default function UsersMgmt() {
   const handleRoleChange = async (userId, newRol) => {
     setUpdatingId(userId);
     try {
-      await api.put(`/usuarios/${userId}/rol`, { rol: newRol });
-      toast.success('Rol actualizado correctamente');
+      const res = await api.put(`/usuarios/${userId}/rol`, { rol: newRol });
+      toast.success(res?.message || 'Rol actualizado correctamente');
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, rol: newRol } : u));
       setSelectedUser(null);
     } catch (err) {

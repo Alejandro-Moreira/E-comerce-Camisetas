@@ -48,15 +48,15 @@ export default function ProductsMgmt() {
       }
 
       if (currentProduct.id) {
-        await api.put(`/productos/${currentProduct.id}`, formData, { 
+        const res = await api.put(`/productos/${currentProduct.id}`, formData, { 
           headers: { 'Content-Type': 'multipart/form-data'} 
         });
-        toast.success("Camiseta Actualizada!");
+        toast.success(res.message || "Camiseta Actualizada!");
       } else {
-        await api.post('/productos', formData, { 
+        const res = await api.post('/productos', formData, { 
           headers: { 'Content-Type': 'multipart/form-data'} 
         });
-        toast.success("Prenda Agregada Exitosamente!");
+        toast.success(res.message || "Prenda Agregada Exitosamente!");
       }
       setShowModal(false);
       fetchProducts();
@@ -68,8 +68,8 @@ export default function ProductsMgmt() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Confirmas que deseas eliminar permanentemente esta prenda?')) {
       try {
-        await api.delete(`/productos/${id}`);
-        toast.success("Producto purgado", { icon: '🗑️' });
+        const res = await api.delete(`/productos/${id}`);
+        toast.success(res.message || "Producto purgado", { icon: '🗑️' });
         fetchProducts();
       } catch (err) { toast.error("Error al borrar del sistema"); }
     }

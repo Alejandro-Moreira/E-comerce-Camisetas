@@ -11,6 +11,11 @@ exports.registerUser = async (nombre, email, password) => {
     throw new AppError('EMAIL_EXISTS', 'El email ya está registrado', 400);
   }
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$#%&*!]).{10,}$/;
+  if (!passwordRegex.test(password)) {
+    throw new AppError('WEAK_PASSWORD', 'La contraseña debe tener al menos 10 caracteres, incluir mayúsculas, minúsculas, números y al menos un símbolo ($, #, %, &, *, !).', 400);
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -142,6 +147,11 @@ exports.resetUserPassword = async (token, newPassword) => {
   const resetObj = await authRepository.getValidPasswordResetToken(token);
   if (!resetObj) {
     throw new AppError('INVALID_TOKEN', 'El token temporal para regenerar credenciales es inválido', 400);
+  }
+
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$#%&*!]).{10,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    throw new AppError('WEAK_PASSWORD', 'La contraseña debe tener al menos 10 caracteres, incluir mayúsculas, minúsculas, números y al menos un símbolo ($, #, %, &, *, !).', 400);
   }
 
   const salt = await bcrypt.genSalt(10);

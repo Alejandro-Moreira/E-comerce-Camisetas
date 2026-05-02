@@ -19,14 +19,17 @@ export default function ResetPassword() {
 
   const handleReset = async (e) => {
     e.preventDefault();
-    if(pwd.length < 6) return toast.error('Mínimo 6 caracteres para la Password');
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$#%&*!]).{10,}$/;
+    if (!passwordRegex.test(pwd)) {
+      return toast.error('La contraseña debe tener al menos 10 caracteres, incluir mayúsculas, minúsculas, números y al menos un símbolo ($, #, %, &, *, !).', { duration: 5000 });
+    }
     setLoading(true);
     try {
       const res = await axios.post('http://localhost:3002/api/auth/reset-password', { token, newPassword: pwd });
       toast.success(res.data.message);
       navigate('/login');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Expirado o Corrupto.');
+      toast.error(err.response?.data?.message || 'Expirado o Corrupto.');
     } finally {
       setLoading(false);
     }

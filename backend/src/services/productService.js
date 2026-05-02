@@ -46,12 +46,15 @@ exports.deleteProduct = async (id) => {
 exports.getRecommendationsForUser = async (userId) => {
   let recommended = [];
 
+  let type = 'global';
+
   if (userId && userId !== 'null' && userId !== 'undefined') {
     const compras = await productRepository.getUserPurchaseHistoryPrefixes(userId);
     if (compras.length > 0) {
       const palabras = compras.map(c => c.nombre.split(' ')[0].replace(/[^a-zA-Z0-9]/g, ''));
       if (palabras.length > 0) {
-        recommended = await productRepository.findSimilarProductsByNames(palabras);
+        recommended = await productRepository.findSimilarProductsByNames(palabras, userId);
+        if (recommended.length > 0) type = 'personalized';
       }
     }
   }
@@ -60,5 +63,5 @@ exports.getRecommendationsForUser = async (userId) => {
     recommended = await productRepository.getTopSellingProductsGlobal();
   }
 
-  return recommended;
+  return { type, products: recommended };
 };

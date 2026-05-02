@@ -62,7 +62,7 @@ exports.getProductReviews = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const [rows] = await pool.execute(`
-      SELECT r.id, r.rating, r.comment, r.creado_en as createdAt, u.nombre as userName
+      SELECT r.id, r.rating, r.comment, r.creado_en as createdAt, u.nombre as userName, r.usuario_id as userId
       FROM product_reviews r
       INNER JOIN usuarios u ON r.usuario_id = u.id
       WHERE r.product_id = ?
@@ -150,5 +150,32 @@ exports.deleteReview = async (req, res) => {
   } catch (err) {
     if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
     errorResponse(res, 'SERVER_ERROR', 'Error exterminando revisión');
+  }
+};
+
+exports.deleteMyReview = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user.id;
+
+    const [rows] = await pool.execute('SELECT id FROM product_reviews WHERE product_id = ? AND usuario_id = ?', [productId, userId]);
+    if (rows.length === 0) throw new AppError('NOT_FOUND', 'No tienes una reseña para este producto', 404);
+
+    await pool.execute('DELETE FROM product_reviews WHERE product_id = ? AND usuario_id = ?', [productId, userId]);
+
+    await logAudit({
+      userId: userId,
+      action: 'DELETE_MY_REVIEW',
+      entity: 'PRODUCT_REVIEW',
+      entityId: productId,
+      ip: req.ip
+    });
+
+    await invalidateReviewCache(productId);
+
+    successResponse(res, null, 'Tu reseña ha sido eliminada exitosamente');
+  } catch (err) {
+    if (err instanceof AppError) return errorResponse(res, err.errorCode, err.message, err.statusCode);
+    errorResponse(res, 'SERVER_ERROR', 'Error al eliminar tu reseña');
   }
 };

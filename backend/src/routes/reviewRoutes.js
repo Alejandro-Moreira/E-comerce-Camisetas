@@ -15,4 +15,7 @@ router.post('/', verifyToken, authorizeRole('cliente'), reviewController.upsertR
 // Moderación exclusiva para Admin
 router.delete('/:id', verifyToken, authorizeRole('admin'), reviewController.deleteReview);
 
+// Eliminar mi propia reseña
+router.delete('/me/:productId', verifyToken, authorizeRole('cliente'), reviewController.deleteMyReview);
+
 module.exports = router;

@@ -17,7 +17,7 @@ export default function ForgotPassword() {
       toast.success(res.data.message, { duration: 5000 });
       setEmail('');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error interno al solicitar.');
+      toast.error(err.response?.data?.message || 'Error interno al solicitar.');
     } finally {
       setLoading(false);
     }

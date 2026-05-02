@@ -25,7 +25,7 @@ export default function InventoryMgmt() {
   useEffect(() => {
     api.get('/productos')
       .then(res => setProducts(res.data))
-      .catch(() => toast.error('Error al cargar inventario'))
+      .catch((err) => toast.error(err.message || 'Error al cargar inventario'))
       .finally(() => setLoading(false));
   }, []);
 

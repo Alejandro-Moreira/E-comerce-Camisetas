@@ -23,7 +23,7 @@ export default function VerifyEmail() {
       })
       .catch(err => {
         setStatus('error');
-        setMsg(err.response?.data?.error || 'Falló la validación. El token expiró o es inválido.');
+        setMsg(err.response?.data?.message || 'Falló la validación. El token expiró o es inválido.');
       });
   }, [token]);
 

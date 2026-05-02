@@ -1,11 +1,12 @@
 import React, { useContext, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import { loadStripe } from '@stripe/stripe-js';
 import { Trash2, ShoppingCart, MapPin, Truck, Plus, Minus, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PostPurchaseReviewModal from '../components/reviews/PostPurchaseReviewModal';
 
 // Clave pública de prueba
 const stripePromise = loadStripe('pk_test_reemplazar_por_tu_api_key_de_prueba');
@@ -16,19 +17,21 @@ const FRACTION_LOGISTICS = 5.00;
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   
   // Estados para envío local
   const [direccion, setDireccion] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [pais, setPais] = useState('Ecuador');
   const [loading, setLoading] = useState(false);
+  const [itemsToReview, setItemsToReview] = useState(null);
 
   const totalProductos = getCartTotal();
   const totalFacturar = cart.length > 0 ? totalProductos + FRACTION_LOGISTICS : 0.00;
 
   const handleCheckout = async () => {
     if (!user) {
-      toast.error('Debes iniciar sesión para comprar');
+      navigate('/login?redirect=/cart');
       return;
     }
     if (cart.length === 0) return;
@@ -40,23 +43,24 @@ export default function Cart() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const data = await api.post('/pedidos/create', { 
+      const res = await api.post('/pedidos/create', { 
         items: cart.map(c => ({ id: c.id, cantidad: c.cantidad, precio: c.precio, talla: c.tallaSelec })),
         total: totalFacturar,
         direccion, ciudad, pais
       });
 
-      if (data.clientSecret) {
+      if (res.data && res.data.clientSecret) {
          // Lógica reservada para Stripe (cuando esté lista la API KEY)
          const stripe = await stripePromise;
          toast.success("Redirigiendo a pasarela segura...", { icon: '💳' });
          // ... (stripe confirm)
-         toast.success('Pedido registrado para pasarela externa.');
+         toast.success(res.message || 'Pedido registrado para pasarela externa.');
       } else {
-         toast.success('Pedido procesado con éxito (Modo Pruebas).', {
+         toast.success(res.message || 'Pedido procesado con éxito (Modo Pruebas).', {
            style: { border: '1px solid #10b981', padding: '16px', color: '#065f46', background: '#ecfdf5' },
            icon: '🎉'
          });
+         setItemsToReview(cart);
          clearCart();
       }
     } catch (err) {
@@ -196,6 +200,13 @@ export default function Cart() {
         </div>
 
       </div>
+
+      {itemsToReview && (
+        <PostPurchaseReviewModal 
+          items={itemsToReview} 
+          onClose={() => setItemsToReview(null)} 
+        />
+      )}
     </div>
   );
 }

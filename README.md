@@ -76,4 +76,3 @@ npm run dev
 ---
 Diseñado y orquestado por **[Alejandro Moreira](https://github.com/Alejandro-Moreira)**.  
 *© Todos los derechos reservados.*
-# E-comerce-Camisetas

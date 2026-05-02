@@ -11,6 +11,7 @@ import { ShoppingBag, Zap, Shirt, Heart, Phone, Mail, Clock, Info, Sparkles } fr
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationType, setRecommendationType] = useState('global');
   const [loading, setLoading] = useState(true);
   const [selectedSizes, setSelectedSizes] = useState({});
   const { addToCart } = useContext(CartContext);
@@ -34,7 +35,10 @@ export default function Home() {
   useEffect(() => {
     const userId = user?.id || 'null';
     api.get(`/productos/recommendations/${userId}`)
-      .then(res => setRecommendations(res.data))
+      .then(res => {
+        setRecommendations(res.data?.products || res.data || []);
+        setRecommendationType(res.data?.type || 'global');
+      })
       .catch(() => {});
   }, [user]);
 
@@ -229,6 +233,11 @@ export default function Home() {
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-purple-600 border-gray-200"></div></div>
+        ) : tab === 'favoritos' && !user ? (
+          <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300 animate-in fade-in">
+            <h3 className="text-xl font-black text-gray-400 flex flex-col items-center justify-center gap-4"><Heart className="w-10 h-10" /> Inicia sesión para ver y gestionar tu Wishlist.</h3>
+            <Link to="/login" className="mt-6 inline-flex bg-purple-600 text-white font-bold py-2 px-6 rounded-full hover:bg-purple-700 transition">Ir a Iniciar Sesión</Link>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300 animate-in fade-in">
             <h3 className="text-xl font-black text-gray-400 flex flex-col items-center justify-center gap-4"><Info className="w-10 h-10" /> Vacío. Intenta con otro término.</h3>
@@ -245,7 +254,7 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-6">
               <Sparkles className="w-6 h-6 text-purple-500" />
               <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                {user ? 'Recomendado para ti' : 'Tendencias del Momento'}
+                {recommendationType === 'personalized' ? 'Recomendado según tus compras' : 'Tendencias del Momento'}
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

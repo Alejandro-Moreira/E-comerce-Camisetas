@@ -39,7 +39,7 @@ export default function ShippingMgmt() {
   useEffect(() => {
     api.get('/pedidos')
       .then(res => setOrders(res.data))
-      .catch(() => toast.error('Error al cargar pedidos'))
+      .catch((err) => toast.error(err.message || 'Error al cargar pedidos'))
       .finally(() => setLoading(false));
   }, []);
 

@@ -53,7 +53,7 @@ const ReviewsModule = ({ productId }) => {
 
     setSubmitting(true);
     try {
-      await axios.post(`${API_URL}/reviews`, {
+      const res = await axios.post(`${API_URL}/reviews`, {
         productId,
         rating: userRating,
         comment: userComment
@@ -61,7 +61,7 @@ const ReviewsModule = ({ productId }) => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
-      toast.success("¡Gracias por tu reseña! Ha sido posteada.");
+      toast.success(res.data.message || "¡Gracias por tu reseña! Ha sido posteada.");
       setIsFormOpen(false);
       setUserComment("");
       setUserRating(0);
@@ -72,6 +72,26 @@ const ReviewsModule = ({ productId }) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!window.confirm("¿Seguro que deseas eliminar tu reseña?")) return;
+    try {
+      await axios.delete(`${API_URL}/reviews/me/${productId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      toast.success("Reseña eliminada");
+      setIsFormOpen(false);
+      fetchReviewsData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error al eliminar reseña");
+    }
+  };
+
+  const handleEditReview = (review) => {
+    setUserRating(review.rating);
+    setUserComment(review.comment || "");
+    setIsFormOpen(true);
   };
 
   const DistributionBar = ({ stars, count, total }) => {
@@ -118,7 +138,7 @@ const ReviewsModule = ({ productId }) => {
           </div>
 
           <div className="mt-8">
-            {!authState.isAuthenticated ? (
+            {!isAuthenticated ? (
               <div className="text-sm bg-blue-50 text-blue-800 p-4 rounded-xl">
                 Para dejar tu opinión sobre este aspecto, por favor Inicia Sesión primero.
               </div>
@@ -184,14 +204,20 @@ const ReviewsModule = ({ productId }) => {
               </p>
             ) : (
               reviews.map((r) => (
-                <div key={r.id} className="border-b border-gray-100 pb-6 last:border-0 hover:bg-gray-50/50 p-4 -ml-4 rounded-xl transition-colors">
-                  <div className="flex items-center justify-between mb-2">
+                <div key={r.id} className="border-b border-gray-100 pb-6 last:border-0 hover:bg-gray-50/50 p-4 -ml-4 rounded-xl transition-colors relative group">
+                  {isAuthenticated && user.id === r.userId && (
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditReview(r)} className="text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded">Editar</button>
+                      <button onClick={handleDeleteReview} className="text-xs text-red-600 hover:text-red-800 font-bold bg-red-50 px-2 py-1 rounded">Eliminar</button>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between mb-2 pr-20">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white font-bold flex items-center justify-center shadow-inner">
                         {r.userName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900">{r.userName}</p>
+                        <p className="font-bold text-gray-900">{r.userName} {isAuthenticated && user.id === r.userId && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-1 uppercase">Tú</span>}</p>
                         <p className="text-xs text-gray-400">Verificado • {new Date(r.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>

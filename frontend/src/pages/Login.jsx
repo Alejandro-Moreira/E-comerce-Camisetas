@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,14 +12,16 @@ export default function Login() {
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
-      toast.success('Ingreso autorizado');
-      navigate('/');
+      const res = await login(email, password);
+      toast.success(res?.message || 'Ingreso autorizado');
+      navigate(redirect);
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
@@ -85,7 +87,7 @@ export default function Login() {
              <div>
                <Link to="/forgot-password" className="font-bold text-gray-400 hover:text-purple-600 transition-colors text-xs">¿Olvidaste tu contraseña?</Link>
              </div>
-             <span className="text-gray-500">¿No tienes cuenta aún? <Link to="/register" className="font-bold text-purple-600 hover:text-purple-500">Regístrate</Link></span>
+             <span className="text-gray-500">¿No tienes cuenta aún? <Link to={redirect !== '/' ? `/register?redirect=${redirect}` : "/register"} className="font-bold text-purple-600 hover:text-purple-500">Regístrate</Link></span>
           </div>
         </div>
       </div>

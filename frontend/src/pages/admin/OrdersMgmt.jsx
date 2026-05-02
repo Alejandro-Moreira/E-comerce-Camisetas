@@ -25,8 +25,8 @@ export default function OrdersMgmt() {
 
   const updateStatus = async (id, estado) => {
     try {
-      await api.put(`/pedidos/${id}/status`, { estado });
-      toast.success(`Estado actualizado a: ${estado}`);
+      const res = await api.put(`/pedidos/${id}/status`, { estado });
+      toast.success(res?.message || `Estado actualizado a: ${estado}`);
       fetchOrders();
     } catch (err) {
       toast.error(err.message || "Error actualizando estado de la logística");
